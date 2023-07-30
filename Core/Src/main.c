@@ -23,6 +23,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "stdlib.h"
+#include "PID.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -59,17 +60,18 @@
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
 
 /*-----------------------------Begin:PID BLDC Macro---------------------------*/
-#define BLDCProportion 														0.2
-#define BLDCIntegral 														10
-#define BLDCDeltaT 															0.001
-#define BLDCClockWise 														1
-#define BLDCCounterClockWise 												0
-#define BLDCIntegralAboveLimit 												1000
-#define BLDCIntegralBelowLimit 											   -1000
-#define BLDCSumAboveLimit 													1000
-#define BLDCSumBelowLimit 												   -1000
-#define _BLDCEncoderPerRound 												800
-#define _BLDCGearRatio 														2.5
+
+#define BLDC_PROPORTION 														0.2
+#define BLDC_INTERGRAL 														10
+#define BLDC_DELTA_T 															0.001
+#define BLDC_CLOCKWISE 														1
+#define BLDC_COUNTER_CLOCKWISE 												0
+#define BLDC_INTERAL_ABOVE_LIMIT 												1000
+#define BLDC_INTERAL_BELOW_LIMIT											   -1000
+#define BLDC_SUM_ABOVE_LIMIT 													1000
+#define BLDC_SUM_BELOW_LIMIT 												   -1000
+#define BLDC_ENCODER_PER_ROUND 												800
+#define BLDC_GEAR_RATIO 														2.5
 /*-----------------------------End:PID BLDC Macro-----------------------------*/
 
 /*-----------------------------Begin:PID DC Macro(SPEED)----------------------*/
@@ -160,51 +162,26 @@ double _PreviousVelocity1;
 
 uint8_t dir1;
 uint16_t pwm1;
-/*-----------------------------End:PID BLDC Variables-------------------------*/
+PID_Param pidBLDCSpeed;
+PID_Param pidDC_Speed;
+PID_Param pidDC_Pos;
 
-/*-----------------------------Begin:PID DC Variables(SPEED)------------------*/
+void PID_DC_Speed_Setup(){
+    pidDC_Speed.deltaT = DCDeltaT;
+    pidDC_Speed.kp = DCProportion;
+    pidDC_Speed.ki = DCIntegral;
+    pidDC_Speed.u.uI_HLim = 1000;
+    pidDC_Speed.u.uI_LLim = -1000;
+    pidDC_Speed.u.u_HLim = DCSumAboveLimit;
+	pidDC_Speed.u.u_LLim = DCSumBelowLimit;
+}
 
-double e2,pre_e2;
-double Target_value2;
-double deltaT2 = DCDeltaT; // Sampling Time
+void PID_DC_Speed_Setup(){
+    pidDC_Speed.deltaT = DCDeltaT;
+    pidDC_Speed.kp = DCProportion;
+    pidDC_Speed.ki = DCIntegral;
+}
 
-double kp2= DCProportion,ki2 = DCIntegral;
-
-// Khai biến khâu tỉ lệ
-double up2;
-
-// khai biến khâu tích phân
-double ui2,ui_p2;
-int ui_above_limit2 = DCIntegralAboveLimit,ui_under_limit2 = DCIntegralBelowLimit;
-
-// khai biến output
-double u2;
-int u_above_limit2 = DCSumAboveLimit,u_under_limit2 = DCSumBelowLimit;
-int dir2,pwm2;
-
-double _RealVelocity2;
-double _FilteredVelocity2;
-double _PreviousVelocity2;
-/*-----------------------------End:PID DC Variables(SPEED)---------------------*/
-
-/*-----------------------------Begin:PID DC Variables(POS)---------------------*/
-double e3,pre_e3;
-double Target_value3;
-double deltaT3 = DCDeltaTPOS; // Th�?i gian lấy mẫu
-
-double kp3 = DCProportionPOS , kd3 = DCIntegralPOS;
-
-// Khai biến khâu tỉ lệ
-double up3;
-
-// khai biến khâu đạo hàm
-double ud3,udf3,udf_p3;
-double alpha3 = FilterAlpha; // Hệ số bộ l�?c
-
-// khai biến output
-double u3;
-int u_above_limit3 = DCSumAboveLimitPOS,u_under_limit3 = DCSumBelowLimit;
-/*-----------------------------End:PID DC Variables(POS)-------------------------*/
 
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
 
