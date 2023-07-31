@@ -228,43 +228,6 @@ void StartLogicControl(void const * argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 //-----------------------------------------------------------------------------------------------------------------//
-//----------------------------------------------------BEGIN:KalmanFilter-------------------------------------------//
-//-----------------------------------------------------------------------------------------------------------------//
-double kalman_filterX(double Xvalue)
-{
-    float x_k1_k1x,x_k_k1x;
-    float Z_kx;
-    static float P_k1_k1x;
-
-    static float Qx = 0.0001;//Q: Regulation noise, Q increases, dynamic response becomes faster, and convergence stability becomes worse
-    static float Rx = 0.005; //R: Test noise, R increases, dynamic response becomes slower, convergence stability becomes better
-    static float Kgx = 0;
-    static float P_k_k1x = 1;
-
-    double kalman_adcx;
-    static float kalman_adc_oldx=0;
-    Z_kx = Xvalue;
-    x_k1_k1x = kalman_adc_oldx;
-
-    x_k_k1x = x_k1_k1x;
-    P_k_k1x = P_k1_k1x + Qx;
-
-    Kgx = P_k_k1x/(P_k_k1x + Rx);
-
-    kalman_adcx = x_k_k1x + Kgx * (Z_kx - kalman_adc_oldx);
-    P_k1_k1x = (1 - Kgx)*P_k_k1x;
-    P_k_k1x = P_k1_k1x;
-    kalman_adc_oldx = kalman_adcx;
-
-    return kalman_adcx;
-}
-//-----------------------------------------------------------------------------------------------------------------//
-//----------------------------------------------------END:KalmanFilter---------------------------------------------//
-//-----------------------------------------------------------------------------------------------------------------//
-
-/*---------------------------------------------------------------------------------------------------------------------------------------------*/
-
-//-----------------------------------------------------------------------------------------------------------------//
 //----------------------------------------------------BEGIN: PID MOTOR---------------------------------------------//
 //-----------------------------------------------------------------------------------------------------------------//
 void PIDBLDC(){
@@ -882,13 +845,13 @@ void StartCalPIDDC(void const * argument)
   {
 
 
-	if((HomeStatus)&&(RunStatus != AccurateFindingState)){
-		PIDDCPos();
-	}
-	else{
-		PIDDCSpeed();
-	}
-	DriveDC(dir2, pwm2);
+//	if((HomeStatus)&&(RunStatus != AccurateFindingState)){
+//		PIDDCPos();
+//	}
+//	else{
+//		PIDDCSpeed();
+//	}
+//	DriveDC(dir2, pwm2);
 	osDelay(1);
 
   }
@@ -901,15 +864,37 @@ void StartCalPIDDC(void const * argument)
 * @param argument: Not used
 * @retval None
 */
+int dirT,pwmT;
+MotorDrive BLDC1;
+unsigned int channel = TIM_CHANNEL_2;
+EncoderRead Encoder1;
+double countT;
+
 /* USER CODE END Header_StartCalPIDBLDC */
 void StartCalPIDBLDC(void const * argument)
 {
   /* USER CODE BEGIN StartCalPIDBLDC */
   /* Infinite loop */
+EncoderSetting(&Encoder1,&htim4,_BLDCEncoderPerRound,BLDCDeltaT);
   for(;;)
   {
-	PIDBLDC();
-	DriveBLDC(dir1, pwm1);
+	  SpeedReadOnly(&Encoder1);
+//	  TimerCounterBLDC = __HAL_TIM_GET_COUNTER(&htim4);
+
+//		TimerCounterBLDC = __HAL_TIM_GET_COUNTER(&htim4);
+//		XungBLDCX4 += TimerCounterBLDC;
+//		TIM4 -> CNT = 0;
+//		_RealVelocity1 = ((XungBLDCX4/deltaT1)/(_BLDCEncoderPerRound*_BLDCGearRatio))*_SecondsPerMin;
+//		_FilteredVelocity1 = 0.854 * _FilteredVelocity1 + 0.0728 * _RealVelocity1+ 0.0728 * _PreviousVelocity1;
+//		_PreviousVelocity1 = _RealVelocity1;
+//		XungBLDCX4=0;
+//	PIDBLDC();
+//	DriveBLDC(dir1, pwm1);
+
+	//__HAL_TIM_SET_COMPARE(&htim2,channel,pwmT);
+//	CountRead(EncoderRead *enc,uint8_t count_mode);
+	countT=CountRead(&Encoder1, count_ModeDegree);
+	BLDC_Drive_RedBoard(&BLDC1,&htim2,pwmT,TIM_CHANNEL_2);
 	osDelay(1);
   }
   /* USER CODE END StartCalPIDBLDC */
@@ -931,22 +916,22 @@ void StartLogicControl(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	if(HomeFound == 0)
-	{
-		HomeFinding();
-	}
-	if(Testcommand == 1){
-		StartBldc();
-		Testcommand = 0;
-	}
-	if(TestComand2 == 1)
-	  {
-		  for(int i = 0;i<8;i++){
-			  Target_value1 = TestSpeed[i];
-			  Target_value3 = TestDegree[i];
-			  osDelay(1000);
-		  }
-	  }
+//	if(HomeFound == 0)
+//	{
+//		HomeFinding();
+//	}
+//	if(Testcommand == 1){
+//		StartBldc();
+//		Testcommand = 0;
+//	}
+//	if(TestComand2 == 1)
+//	  {
+//		  for(int i = 0;i<8;i++){
+//			  Target_value1 = TestSpeed[i];
+//			  Target_value3 = TestDegree[i];
+//			  osDelay(1000);
+//		  }
+//	  }
     osDelay(1);
   }
 

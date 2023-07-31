@@ -10,6 +10,13 @@
 
 #include "main.h"
 
+//#define PID_EN
+#define ENC_EN
+#define MOTOR_EN
+
+
+#ifdef PID_EN
+
 //------------------------Begin: Struct of OutSumValue-----------------------------//
 typedef struct PID_Param{
 //---------Input Parameters-----------//
@@ -40,6 +47,18 @@ typedef struct PID_Param{
 }PID_Param;
 //------------------------End: Struct of OutSumValue-------------------------------//
 
+//------------------------Begin: Function of Pid-----------------------------------//
+void Pid_SetParam(PID_Param *pid,double kP,double kI,double kD,double deltaT,double uI_AboveLimit,double uI_BelowLimit,double u_AboveLimit,double u_UnderLimit);
+void Pid_uI_PreSetParam(PID_Param *pid,double uI_AboveLimit,double uI_BelowLimit);
+void Pid_u_PresetParam(PID_Param *pid,double u_AboveLimit,double u_BelowLimit);
+void Pid_Term_PresetParam(PID_Param *pid,double kP,double kI,double kD);
+double Pid_Cal(PID_Param *pid,double Target);
+//------------------------End: Function of Pid-------------------------------------//
+#endif
+
+
+
+#ifdef ENC_EN
 //------------------------Begin: Struct of Encoder Read----------------------------//
 
 typedef struct EncoderRead{
@@ -62,22 +81,40 @@ typedef struct EncoderRead{
 
 //------------------------End: Struct of Encoder Read------------------------------//
 
-
-//------------------------Begin: Function of Pid-----------------------------------//
-void Pid_SetParam(PID_Param *pid,double kP,double kI,double kD,double deltaT,double uI_AboveLimit,double uI_BelowLimit,double u_AboveLimit,double u_UnderLimit);
-void Pid_uI_PreSetParam(PID_Param *pid,double uI_AboveLimit,double uI_BelowLimit);
-void Pid_u_PresetParam(PID_Param *pid,double u_AboveLimit,double u_BelowLimit);
-void Pid_Term_PresetParam(PID_Param *pid,double kP,double kI,double kD);
-double Pid_Cal(PID_Param *pid,double Target);
-//------------------------End: Function of Pid-------------------------------------//
-
-
-#define ModeX1 0
-#define ModeX4 1
-#define ModeDegree 2
+//------------------------Begin: Function of Encoders------------------------------//
+#define count_ModeX1 0
+#define count_ModeX4 1
+#define count_ModeDegree 2
 
 void EncoderSetting(EncoderRead *enc,TIM_HandleTypeDef *htim,int count_PerRevol,double deltaT);
 void SpeedReadOnly(EncoderRead *enc);
 void SpeedReadNonReset(EncoderRead *enc);
 double CountRead(EncoderRead *enc,uint8_t count_mode);
+//------------------------End: Function of Encoders---------------------------------//
+#endif
+
+
+
+#ifdef MOTOR_EN
+
+#define motor_Reserve 0
+#define motor_Normal 1
+
+typedef struct MotorDrive{
+	TIM_HandleTypeDef *htim1;
+	TIM_HandleTypeDef *htim2;
+	int Input;
+	int8_t Dir;
+	uint16_t Pwm;
+	uint8_t Mode;
+	unsigned int Channel1;
+	unsigned int Channel2;
+}MotorDrive;
+
+
+void DC_Drive_BTS(MotorDrive *motor,TIM_HandleTypeDef *htim1,TIM_HandleTypeDef *htim2,uint8_t Mode,int Input,unsigned int Channel1,unsigned int Channel2);
+void BLDC_Drive_RedBoard(MotorDrive *motor,TIM_HandleTypeDef *htim1,int Input,unsigned int Channel1);
+
+#endif
+
 #endif /* INC_PID_H_ */

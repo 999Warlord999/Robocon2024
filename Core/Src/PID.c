@@ -6,7 +6,9 @@
  */
 
 #include "PID.h"
+#include "stdlib.h"
 
+ #ifdef PID_EN
 //-----------------------------------------------Begin: Setting Parameter for PID------------------------------------------//
 void Pid_SetParam(PID_Param *pid,double kP,double kI,double kD,double deltaT,double uI_AboveLimit,double uI_BelowLimit,double u_AboveLimit,double u_BelowLimit)
 {
@@ -90,7 +92,10 @@ double Pid_Cal(PID_Param *pid,double Target)
 }
 
 //-----------------------------------------------End: Calculating PID-----------------------------------------------------//
+#endif
 
+
+#ifdef ENC_EN
 void EncoderSetting(EncoderRead *enc,TIM_HandleTypeDef *htim,int count_PerRevol,double deltaT)
 {
 	enc->htim = htim;
@@ -121,28 +126,51 @@ void SpeedReadNonReset(EncoderRead *enc){
 	enc->count_Pre = enc->count_X4;
 }
 
-
-
 double CountRead(EncoderRead *enc,uint8_t count_mode){
-	enc->count_PerRevol = enc->count_PerRevol;
+	enc->count_Mode = count_mode;
 	enc->count_Timer = __HAL_TIM_GET_COUNTER(enc->htim);
 	enc->count_X4 += enc->count_Timer;
 	__HAL_TIM_SET_COUNTER(enc->htim,0);
 
-	if (enc->count_Mode == ModeX4)
+	if (enc->count_Mode == count_ModeX4)
 	{
 		return enc->count_X4;
-	}else if (enc->count_Mode == ModeX1)
+	}else if (enc->count_Mode == count_ModeX1)
 	{
 		enc->count_X1 = enc->count_X4/4;
 		return enc->count_X1;
-	}else if (enc->count_Mode == ModeDegree)
+	}else if (enc->count_Mode == count_ModeDegree)
 	{
 		enc->Degree = enc->count_X4*360/enc->count_PerRevol;
 		return enc->Degree;
 	}else {
 		return 0;
 	}
+//	enc->count_X1 = enc->count_X4/4;
+//	enc->Degree = enc->count_X4*360/enc->count_PerRevol;
+}
+#endif
+
+
+
+#ifdef MOTOR_EN
+
+void BLDC_Drive_RedBoard(MotorDrive *motor,TIM_HandleTypeDef *htim1,int Input,unsigned int Channel1)
+{
+	motor->htim1 = htim1;
+	motor->Pwm = abs(Input);
+	motor->Channel1 = Channel1;
+	if (Input>0)
+	{
+		HAL_GPIO_WritePin(DirBLDC_GPIO_Port, DirBLDC_Pin, 0);
+		__HAL_TIM_SET_COMPARE(motor->htim1,motor->Channel1,motor->Pwm);
+	}
+	else
+	{
+		HAL_GPIO_WritePin(DirBLDC_GPIO_Port, DirBLDC_Pin, 1);
+		__HAL_TIM_SET_COMPARE(motor->htim1,motor->Channel1,motor->Pwm);
+	}
 }
 
 
+#endif
