@@ -60,10 +60,11 @@ void Pid_Term_PresetParam(PID_Param *pid,double kP,double kI,double kD)
 
 //-----------------------------------------------Begin: Calculating PID---------------------------------------------------//
 
-double Pid_Cal(PID_Param *pid,double Target)
+double Pid_Cal(PID_Param *pid,double Target,double CurrVal)
 {
 //-----------------------Input-------------------------//
 	pid->Target = Target;
+	pid->CurrVal = CurrVal;
 	pid->e = pid->Target - pid->CurrVal;
 
 //-----------------------Propotion Term----------------//

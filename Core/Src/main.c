@@ -869,16 +869,20 @@ MotorDrive BLDC1;
 unsigned int channel = TIM_CHANNEL_2;
 EncoderRead Encoder1;
 double countT;
-
+PID_Param PidBLDC;
+int TargetT,CurrT,outputT;
 /* USER CODE END Header_StartCalPIDBLDC */
 void StartCalPIDBLDC(void const * argument)
 {
   /* USER CODE BEGIN StartCalPIDBLDC */
   /* Infinite loop */
+Pid_SetParam(&PidBLDC,1,1,0,0.01,1000,-1000,1000,-1000);
 EncoderSetting(&Encoder1,&htim4,_BLDCEncoderPerRound,BLDCDeltaT);
   for(;;)
   {
+
 	  SpeedReadOnly(&Encoder1);
+	  outputT = Pid_Cal(&PidBLDC,TargetT,CurrT);
 //	  TimerCounterBLDC = __HAL_TIM_GET_COUNTER(&htim4);
 
 //		TimerCounterBLDC = __HAL_TIM_GET_COUNTER(&htim4);
