@@ -1,6 +1,4 @@
 
-Debug
-Middlewares
 # Object files
 *.o
 *.ko
@@ -33,9 +31,7 @@ Middlewares
 *.png
 
 # Eclipse CDT project files
-.cproject
-.project
-.settings/
+
 
 # Vagrant directory
 .vagrant/
