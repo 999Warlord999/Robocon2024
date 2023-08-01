@@ -881,12 +881,12 @@ void StartCalPIDDC(void const * argument)
   {
 
 
-	if((HomeStatus)&&(RunStatus != AccurateFindingState)){
+//	if((HomeStatus)&&(RunStatus != AccurateFindingState)){
 		PIDDCPos();
-	}
-	else{
-		PIDDCSpeed();
-	}
+//	}
+//	else{
+//		PIDDCSpeed();
+//	}
 	DriveDC(dir2, pwm2);
 	osDelay(1);
 
@@ -930,22 +930,22 @@ void StartLogicControl(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	if(HomeFound == 0)
-	{
-		HomeFinding();
-	}
-	if(Testcommand == 1){
-		StartBldc();
-		Testcommand = 0;
-	}
-	if(TestComand2 == 1)
-	  {
-		  for(int i = 0;i<8;i++){
-			  Target_value1 = TestSpeed[i];
-			  Target_value3 = TestDegree[i];
-			  osDelay(1000);
-		  }
-	  }
+//	if(HomeFound == 0)
+//	{
+//		HomeFinding();
+//	}
+//	if(Testcommand == 1){
+//		StartBldc();
+//		Testcommand = 0;
+//	}
+//	if(TestComand2 == 1)
+//	  {
+//		  for(int i = 0;i<8;i++){
+//			  Target_value1 = TestSpeed[i];
+//			  Target_value3 = TestDegree[i];
+//			  osDelay(1000);
+//		  }
+//	  }
     osDelay(1);
   }
 
