@@ -62,6 +62,8 @@
 /*-----------------------------Begin:PID BLDC Macro---------------------------*/
 #define BLDCProportion 0.2
 #define BLDCIntegral 10
+#define BLDCDerivative	0
+#define BLDCAlpha 0
 #define BLDCDeltaT 0.001
 #define BLDCClockWise 1
 #define BLDCCounterClockWise 0
@@ -71,7 +73,7 @@
 #define BLDCSumBelowLimit -1000
 #define _BLDCEncoderPerRound 2000
 #define _BLDCGearRatio 	2.5
-#define BLDCDerivative	0
+
 
 double target_BLDC_Speed;
 /*-----------------------------End:PID BLDC Macro-----------------------------*/
@@ -79,6 +81,8 @@ double target_BLDC_Speed;
 /*-----------------------------Begin:PID DC Macro(SPEED)----------------------*/
 #define DCProportion 20
 #define DCIntegral 500
+#define DCDerivative 0
+#define DCAlpha 0
 #define POS 0.001
 #define DCDeltaT 0.001
 #define DCClockWise -1
@@ -96,7 +100,11 @@ double target_DC_SPEED;
 /*-----------------------------Begin:PID DC Macro(POS)------------------------*/
 #define DCProportionPOS 5
 #define DCIntegralPOS 0
+#define DCDerivativePOS 0
+#define DCAlphaPOS 0
 #define DCDeltaTPOS 0.001
+#define DCIntegralAboveLimitPOS 1000
+#define DCIntegralBelowLimitPOS -1000
 #define DCSumAboveLimitPOS 1000
 #define DCSumBelowLimitPOS -1000
 #define FilterAlpha 0
@@ -198,7 +206,7 @@ void PIDDCSpeed(void)
 
 void PIDDCPos(){
 	//Calculate the Pos of DC Servo:
-	Pid_Cal(&PID_DC_SPEED,target_DC_POS,CountRead(&ENC_DC,count_ModeDegree));
+	Pid_Cal(&PID_DC_POS,target_DC_POS,CountRead(&ENC_DC,count_ModeDegree));
 	//Control the Speed PID:
 	target_DC_SPEED = PID_DC_POS.u;
 	PIDDCSpeed();
@@ -224,21 +232,21 @@ void ResetDegree(uint8_t ResetEnable){
 	}
 }
 
-//void SetAndResetU2parameter(uint8_t command){
-//	if(!command){
-//		ui_above_limit2 = 0;
-//		ui_under_limit2 = 0;
-//		u_above_limit2 = 0;
-//		u_under_limit2 =0;
-//		_PreviousVelocity2 = 0;
-//		_RealVelocity2 = 0;
-//	}else{
-//		ui_above_limit2 = DCIntegralAboveLimit;
-//		ui_under_limit2 = DCIntegralBelowLimit;
-//		u_above_limit2 = DCSumAboveLimit;
-//		u_under_limit2 = DCSumBelowLimit;
-//	}
-//}
+void SetAndResetU2parameter(uint8_t command){
+	if(!command){
+		PID_DC_SPEED.uI_AboveLimit=0;
+		PID_DC_SPEED.uI_BelowLimit=0;
+		PID_DC_SPEED.u_AboveLimit=0;
+		PID_DC_SPEED.u_BelowLimit=0;
+		ENC_DC.vel_Pre = 0;
+		ENC_DC.vel_Real = 0;
+	}else{
+		PID_DC_SPEED.uI_AboveLimit = DCIntegralAboveLimit;
+		PID_DC_SPEED.uI_BelowLimit = DCIntegralBelowLimit;
+		PID_DC_SPEED.u_AboveLimit = DCSumAboveLimit;
+		PID_DC_SPEED.u_BelowLimit = DCSumBelowLimit;
+	}
+}
 
 //void SetAndResetU1parameter(uint8_t command){
 //	if(!command){
@@ -272,59 +280,59 @@ void ResetDegree(uint8_t ResetEnable){
 //-----------------------------------------------------------------------------------------------------------------//
 
 
-//void HomeFinding(){
+void HomeFinding(){
 //  // Reading home sensor if the  wheel at home or not
 //  // if at home the wheel won't run and set the initial Degree to 0
 //  // if not the wheel will find home
-//  if(HAL_GPIO_ReadPin(Home_GPIO_Port, Home_Pin)== AtHome){
-//	osDelay(1);
-//	if(HAL_GPIO_ReadPin(Home_GPIO_Port, Home_Pin)== AtHome){
-//		HomeStatus = 1;
-//		if((RunStatus == IntialState)||(RunStatus == AccurateFindingState)){
-//			Target_value3 = DCDegree;
-//			RunStatus++;
-//		}
-//	  }
-//	}
+  if(HAL_GPIO_ReadPin(Home_GPIO_Port, Home_Pin)== AtHome){
+	osDelay(1);
+	if(HAL_GPIO_ReadPin(Home_GPIO_Port, Home_Pin)== AtHome){
+		HomeStatus = 1;
+		if((RunStatus == IntialState)||(RunStatus == AccurateFindingState)){
+			target_DC_POS = CountRead(&ENC_DC,count_ModeDegree);
+			RunStatus++;
+		}
+	  }
+	}
 
   // At this State the Wheel will find its home at high speed
   // And will reserve when it reach the Degree limits not to break the wires
-//  if(RunStatus == IntialState){
-//	if(DCDegree > FindingDegreeAboveLimit){
-//		RotateStatus = DCClockWise;
-//	}else if(DCDegree< FindingDegreeBelowLimit){
-//		RotateStatus = DCCounterClockWise;
-//	}
-//	Target_value2 = IntialFindingSpeed*RotateStatus;
-//  }
+  if(RunStatus == IntialState){
+	if(DCDegree > FindingDegreeAboveLimit){
+		RotateStatus = DCClockWise;
+	}else if(DCDegree< FindingDegreeBelowLimit){
+		RotateStatus = DCCounterClockWise;
+	}
+	target_DC_SPEED = IntialFindingSpeed*RotateStatus;
+  }
 
  //At this State the Wheel will stop and Reset to 0 Degree
-//if((RunStatus == IntialStopAndResetState)||(RunStatus == AccurateStopAndResetState)){
-//	osDelay(500);
-//	SetAndResetU2parameter(0);
-//	ResetDegree(1);
-//	Target_value3 = 0;
-//	osDelay(10);
-//	ResetDegree(0);
-//	SetAndResetU2parameter(1);
-//	RunStatus += 1;
-//}
+if((RunStatus == IntialStopAndResetState)||(RunStatus == AccurateStopAndResetState)){
+	osDelay(500);
+	SetAndResetU2parameter(0);
+	ResetDegree(1);
+	target_DC_POS = 0;
+	osDelay(10);
+	ResetDegree(0);
+	SetAndResetU2parameter(1);
+	RunStatus += 1;
+}
 
 //At this State the wheel will run at low speed to find its home
 //And also reserve when its reach the degree limits
-//if ((RunStatus == AccurateFindingState)&&(HAL_GPIO_ReadPin(Home_GPIO_Port, Home_Pin) == NotAtHome)){
-//	if(DCDegree < AccurateFindingDegreeBelowLimit){
-//		RotateStatus = DCCounterClockWise;
-//	}else if(DCDegree > AccurateFindingDegreeAboveLimit){
-//		RotateStatus = DCClockWise;
-//	}
-//	Target_value2 = AccurateFindingSpeed*RotateStatus;
-//	}
-////End Home Finding
-//if (RunStatus == EndState){
-//	HomeFound = 1;
-//}
-//}
+if ((RunStatus == AccurateFindingState)&&(HAL_GPIO_ReadPin(Home_GPIO_Port, Home_Pin) == NotAtHome)){
+	if(DCDegree < AccurateFindingDegreeBelowLimit){
+		RotateStatus = DCCounterClockWise;
+	}else if(DCDegree > AccurateFindingDegreeAboveLimit){
+		RotateStatus = DCClockWise;
+	}
+	target_DC_SPEED = AccurateFindingSpeed*RotateStatus;
+	}
+//End Home Finding
+if (RunStatus == EndState){
+	HomeFound = 1;
+}
+}
 
 //-----------------------------------------------------------------------------------------------------------------//
 //----------------------------------------------------END: Home Finding--------------------------------------------//
@@ -377,9 +385,9 @@ int main(void)
   EncoderSetting(&ENC_BLDC,&htim4,_BLDCEncoderPerRound*2.5,BLDCDeltaT);
   EncoderSetting(&ENC_DC,&htim3,_DCEncoderPerRound,DCDeltaT);
 
-  Pid_SetParam(&PID_BLDC,BLDCProportion,BLDCIntegral,0,0,BLDCDeltaT,BLDCIntegralAboveLimit,BLDCIntegralBelowLimit,BLDCSumAboveLimit,BLDCSumBelowLimit);
-  Pid_SetParam(&PID_DC_SPEED,DCProportion,DCIntegral,0,0,DCDeltaT,DCIntegralAboveLimit,DCIntegralBelowLimit,DCSumAboveLimit,DCSumBelowLimit);
-  Pid_SetParam(&PID_DC_POS,DCProportionPOS,DCIntegralPOS,0,0,DCDeltaTPOS,0,0,DCSumAboveLimitPOS,DCSumBelowLimitPOS);
+  Pid_SetParam(&PID_BLDC,BLDCProportion,BLDCIntegral,BLDCDerivative,BLDCAlpha,BLDCDeltaT,BLDCIntegralAboveLimit,BLDCIntegralBelowLimit,BLDCSumAboveLimit,BLDCSumBelowLimit);
+  Pid_SetParam(&PID_DC_SPEED,DCProportion,DCIntegral,DCDerivative,DCAlpha,DCDeltaT,DCIntegralAboveLimit,DCIntegralBelowLimit,DCSumAboveLimit,DCSumBelowLimit);
+  Pid_SetParam(&PID_DC_POS,DCProportionPOS,DCIntegralPOS,DCDerivativePOS,DCAlphaPOS,DCDeltaTPOS,DCIntegralAboveLimitPOS,DCIntegralBelowLimitPOS,DCSumAboveLimitPOS,DCSumBelowLimitPOS);
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -700,7 +708,7 @@ void StartCalPIDDC(void const * argument)
 * @param argument: Not used
 * @retval None
 */
-
+int AntiProtection;
 /* USER CODE END Header_StartCalPIDBLDC */
 void StartCalPIDBLDC(void const * argument)
 {
@@ -708,7 +716,16 @@ void StartCalPIDBLDC(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	PIDBLDC();
+	if(AntiProtection == 1){
+		PID_BLDC.uI = 0;
+		PID_BLDC.uI_Pre = 0;
+		PID_BLDC.u = 0;
+		BLDC_Drive_RedBoard(&BLDC,&htim2,0,TIM_CHANNEL_2);
+		osDelay(100);
+		AntiProtection = 0;
+	}else{
+		PIDBLDC();
+	}
 	osDelay(1);
   }
   /* USER CODE END StartCalPIDBLDC */
@@ -723,6 +740,7 @@ void StartCalPIDBLDC(void const * argument)
 
 int TestDegree[] = {90,180,50,0,60,0,-90,10};
 int TestSpeed[] = {100,0,120,200,100,200,100,0};
+
 /* USER CODE END Header_StartLogicControl */
 void StartLogicControl(void const * argument)
 {
@@ -730,22 +748,11 @@ void StartLogicControl(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-//	if(HomeFound == 0)
-//	{
-//		HomeFinding();
-//	}
-//	if(Testcommand == 1){
-//		StartBldc();
-//		Testcommand = 0;
-//	}
-//	if(TestComand2 == 1)
-//	  {
-//		  for(int i = 0;i<8;i++){
-//			  Target_value1 = TestSpeed[i];
-//			  Target_value3 = TestDegree[i];
-//			  osDelay(1000);
-//		  }
-//	  }
+	if(HomeFound == 0)
+	{
+		HomeFinding();
+	}
+
     osDelay(1);
   }
 
