@@ -112,6 +112,9 @@ double target_DC_SPEED;
 double target_DC_POS;
 /*-----------------------------End:PID DC Macro(POS)--------------------------*/
 
+uint8_t SlaveBuff[10];
+
+
 /*---------------------------------------------------------------------------------------------------------------------------------------------*/
 /* USER CODE END PM */
 
@@ -305,9 +308,33 @@ if (RunStatus == EndState){
 
 //-----------------------------------------------------------------------------------------------------------------//
 //----------------------------------------------------END: Home Finding--------------------------------------------//
-//-----------------------------------------------------------------------------------------------------------------//
+//-----------------------------------------------------------------------------------------------------------------//Mode
+uint8_t *pByte = NULL;
 
+uint8_t Mode;
+float SpeedBLDC;
+float DCDegree;
+void MergeByteToFloat(uint8_t* dataArray){
+	uint8_t *pFloat=NULL;
+	pFloat = &Mode;
+	*(pFloat)=dataArray[0];
+	pFloat = &SpeedBLDC;
+	for(uint8_t i = 1; i < 5;i++)
+	{
+		*(pFloat+i-1)=dataArray[i];
+	}
+	pFloat = &DCDegree;
+	for(uint8_t i = 5; i < 9;i++)
+	{
+		*(pFloat+i-5)=dataArray[i];
+	}
+}
 
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  HAL_UART_Receive_IT(&huart1, SlaveBuff, 10);
+  MergeByteToFloat(SlaveBuff);
+}
 /* USER CODE END 0 */
 
 /**
@@ -357,6 +384,8 @@ int main(void)
   Pid_SetParam(&PID_BLDC,BLDCProportion,BLDCIntegral,BLDCDerivative,BLDCAlpha,BLDCDeltaT,BLDCIntegralAboveLimit,BLDCIntegralBelowLimit,BLDCSumAboveLimit,BLDCSumBelowLimit);
   Pid_SetParam(&PID_DC_SPEED,DCProportion,DCIntegral,DCDerivative,DCAlpha,DCDeltaT,DCIntegralAboveLimit,DCIntegralBelowLimit,DCSumAboveLimit,DCSumBelowLimit);
   Pid_SetParam(&PID_DC_POS,DCProportionPOS,DCIntegralPOS,DCDerivativePOS,DCAlphaPOS,DCDeltaTPOS,DCIntegralAboveLimitPOS,DCIntegralBelowLimitPOS,DCSumAboveLimitPOS,DCSumBelowLimitPOS);
+
+  HAL_UART_Receive_IT (&huart1, SlaveBuff, 10);
   /* USER CODE END 2 */
 
   /* USER CODE BEGIN RTOS_MUTEX */
@@ -754,7 +783,11 @@ void StartLogicControl(void const * argument)
 	{
 		HomeFinding();
 	}
-
+	else
+	{
+		target_BLDC_Speed = SpeedBLDC;
+		target_DC_POS = DCDegree;
+	}
     osDelay(1);
   }
 
