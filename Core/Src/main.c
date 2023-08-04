@@ -120,6 +120,8 @@ TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim4;
 
+UART_HandleTypeDef huart1;
+
 osThreadId CalPIDDCHandle;
 osThreadId CalPIDBLDCHandle;
 osThreadId LogicControlHandle;
@@ -139,12 +141,6 @@ int TestComand2;
 
 /*-----------------------------Begin:Encoder Read Variables--------------------*/
 
-int16_t TimerCounterBLDC;
-int XungBLDCX4;
-uint16_t Tim1Counter;
-int16_t TimerCounterDC;
-int XungDCX4,XungDC,PreXung;
-double DCDegree,XungTinhToanDC;
 int8_t RotateStatus = 1;
 
 /*-----------------------------End:Encoder Read Variables----------------------*/
@@ -169,6 +165,7 @@ static void MX_GPIO_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM3_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_USART1_UART_Init(void);
 void StartCalPIDDC(void const * argument);
 void StartCalPIDBLDC(void const * argument);
 void StartLogicControl(void const * argument);
@@ -225,12 +222,6 @@ void PIDDCPos(){
 //----------------------------------------------------BEGIN: RESET MOTOR-------------------------------------------//
 //-----------------------------------------------------------------------------------------------------------------//
 
-void ResetDegree(uint8_t ResetEnable){
-	if(ResetEnable == 1){
-		TIM3 -> CNT = 0;
-		XungDCX4 = 0;
-	}
-}
 
 void SetAndResetU2parameter(uint8_t command){
 	if(!command){
@@ -248,28 +239,6 @@ void SetAndResetU2parameter(uint8_t command){
 	}
 }
 
-//void SetAndResetU1parameter(uint8_t command){
-//	if(!command){
-//		ui_above_limit1 = 0;
-//		ui_under_limit1 = 0;
-//		u_above_limit1 = 0;
-//		u_under_limit1 =0;
-//		_PreviousVelocity1 = 0;
-//		_RealVelocity1 = 0;
-//		Target_value1 = 0;
-//	}else{
-//		ui_above_limit1 = BLDCIntegralAboveLimit;
-//		ui_under_limit1 = BLDCIntegralBelowLimit;
-//		u_above_limit1 = BLDCSumAboveLimit;
-//		u_under_limit1 = BLDCSumBelowLimit;
-//	}
-//}
-
-//void StartBldc(){
-//	SetAndResetU1parameter(0);
-//	osDelay(10);
-//	SetAndResetU1parameter(1);
-//}
 
 //-----------------------------------------------------------------------------------------------------------------//
 //----------------------------------------------------END: RESET MOTOR---------------------------------------------//
@@ -298,9 +267,9 @@ void HomeFinding(){
   // At this State the Wheel will find its home at high speed
   // And will reserve when it reach the Degree limits not to break the wires
   if(RunStatus == IntialState){
-	if(DCDegree > FindingDegreeAboveLimit){
+	if(CountRead(&ENC_DC,count_ModeDegree) > FindingDegreeAboveLimit){
 		RotateStatus = DCClockWise;
-	}else if(DCDegree< FindingDegreeBelowLimit){
+	}else if(CountRead(&ENC_DC,count_ModeDegree)< FindingDegreeBelowLimit){
 		RotateStatus = DCCounterClockWise;
 	}
 	target_DC_SPEED = IntialFindingSpeed*RotateStatus;
@@ -310,10 +279,10 @@ void HomeFinding(){
 if((RunStatus == IntialStopAndResetState)||(RunStatus == AccurateStopAndResetState)){
 	osDelay(500);
 	SetAndResetU2parameter(0);
-	ResetDegree(1);
+	ResetCount(&ENC_DC,1);
 	target_DC_POS = 0;
 	osDelay(10);
-	ResetDegree(0);
+	ResetCount(&ENC_DC,0);
 	SetAndResetU2parameter(1);
 	RunStatus += 1;
 }
@@ -321,9 +290,9 @@ if((RunStatus == IntialStopAndResetState)||(RunStatus == AccurateStopAndResetSta
 //At this State the wheel will run at low speed to find its home
 //And also reserve when its reach the degree limits
 if ((RunStatus == AccurateFindingState)&&(HAL_GPIO_ReadPin(Home_GPIO_Port, Home_Pin) == NotAtHome)){
-	if(DCDegree < AccurateFindingDegreeBelowLimit){
+	if(CountRead(&ENC_DC,count_ModeDegree) < AccurateFindingDegreeBelowLimit){
 		RotateStatus = DCCounterClockWise;
-	}else if(DCDegree > AccurateFindingDegreeAboveLimit){
+	}else if(CountRead(&ENC_DC,count_ModeDegree) > AccurateFindingDegreeAboveLimit){
 		RotateStatus = DCClockWise;
 	}
 	target_DC_SPEED = AccurateFindingSpeed*RotateStatus;
@@ -354,8 +323,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-
-	HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
   /* USER CODE END Init */
@@ -372,6 +340,7 @@ int main(void)
   MX_TIM2_Init();
   MX_TIM3_Init();
   MX_TIM4_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_2);
   HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_3);
@@ -634,6 +603,39 @@ static void MX_TIM4_Init(void)
 }
 
 /**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
   * @brief GPIO Initialization Function
   * @param None
   * @retval None
@@ -664,7 +666,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(Home_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI4_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(EXTI4_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
 }
@@ -689,12 +691,12 @@ void StartCalPIDDC(void const * argument)
   {
 
 
-//	if((HomeStatus)&&(RunStatus != AccurateFindingState)){
-	PIDDCPos();
-//	}
-//	else{
-//	PIDDCSpeed();
-//	}
+	if((HomeStatus)&&(RunStatus != AccurateFindingState)){
+		PIDDCPos();
+	}
+	else{
+		PIDDCSpeed();
+	}
 
 	osDelay(1);
 

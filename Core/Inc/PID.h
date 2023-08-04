@@ -90,6 +90,7 @@ void EncoderSetting(EncoderRead *enc,TIM_HandleTypeDef *htim,int count_PerRevol,
 void SpeedReadOnly(EncoderRead *enc);
 void SpeedReadNonReset(EncoderRead *enc);
 double CountRead(EncoderRead *enc,uint8_t count_mode);
+void ResetCount(EncoderRead *enc,uint8_t command);
 //------------------------End: Function of Encoders---------------------------------//
 #endif
 

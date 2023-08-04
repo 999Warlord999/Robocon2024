@@ -148,8 +148,15 @@ double CountRead(EncoderRead *enc,uint8_t count_mode){
 	}else {
 		return 0;
 	}
-//	enc->count_X1 = enc->count_X4/4;
-//	enc->Degree = enc->count_X4*360/enc->count_PerRevol;
+}
+
+void ResetCount(EncoderRead *enc,uint8_t command)
+{
+	if (command == 1)
+	{
+		__HAL_TIM_SET_COUNTER(enc->htim,0);
+		enc->count_X4 = 0;
+	}
 }
 #endif
 

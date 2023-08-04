@@ -7,5 +7,6 @@
 ../Core/Src/PID.c:107:6:SpeedReadOnly	24	static
 ../Core/Src/PID.c:120:6:SpeedReadNonReset	24	static
 ../Core/Src/PID.c:131:8:CountRead	16	static
-../Core/Src/PID.c:160:6:BLDC_Drive_RedBoard	24	static
-../Core/Src/PID.c:177:6:DC_Drive_BTS	24	static
+../Core/Src/PID.c:153:6:ResetCount	16	static
+../Core/Src/PID.c:167:6:BLDC_Drive_RedBoard	24	static
+../Core/Src/PID.c:184:6:DC_Drive_BTS	24	static
